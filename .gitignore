@@ -1,1 +1,27 @@
-.DS_Store
+# HDF5 files
+data/
+
+# test directory 
+test/
+
+# i-python checkpoints
+.ipynb_checkpoints/
+
+# pycache
+models/__pycache__/
+libs/__pycache__/
+
+# trash
+trash/
+
+# output
+output/
+
+# hdf5 creation files
+convert_to_hdf5/*.err
+convert_to_hdf5/*.out
+
+## tensorboard runs
+runs/
+
+

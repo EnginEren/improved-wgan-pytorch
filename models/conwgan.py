@@ -1,8 +1,8 @@
 from torch import nn
 from torch.autograd import grad
 import torch
-DIM=64
-OUTPUT_DIM=64*64*3
+DIM=30
+OUTPUT_DIM=30*30*1
 
 class MyConvo2d(nn.Module):
     def __init__(self, input_dim, output_dim, kernel_size, he_init = True,  stride = 1, bias = True):
@@ -145,7 +145,7 @@ class ReLULayer(nn.Module):
 class FCGenerator(nn.Module):
     def __init__(self, FC_DIM=512):
         super(FCGenerator, self).__init__()
-        self.relulayer1 = ReLULayer(128, FC_DIM)
+        self.relulayer1 = ReLULayer(100, FC_DIM)
         self.relulayer2 = ReLULayer(FC_DIM, FC_DIM)
         self.relulayer3 = ReLULayer(FC_DIM, FC_DIM)
         self.relulayer4 = ReLULayer(FC_DIM, FC_DIM)
@@ -167,7 +167,7 @@ class GoodGenerator(nn.Module):
 
         self.dim = dim
 
-        self.ln1 = nn.Linear(128, 4*4*8*self.dim)
+        self.ln1 = nn.Linear(100, 4*4*8*self.dim)
         self.rb1 = ResidualBlock(8*self.dim, 8*self.dim, 3, resample = 'up')
         self.rb2 = ResidualBlock(8*self.dim, 4*self.dim, 3, resample = 'up')
         self.rb3 = ResidualBlock(4*self.dim, 2*self.dim, 3, resample = 'up')
@@ -199,7 +199,7 @@ class GoodDiscriminator(nn.Module):
 
         self.dim = dim
         self.num_class = num_class
-        self.conv1 = MyConvo2d(3, self.dim, 3, he_init = False)
+        self.conv1 = MyConvo2d(1, self.dim, 3, he_init = False)
         self.rb1 = ResidualBlock(self.dim, 2*self.dim, 3, resample = 'down', hw=DIM)
         self.rb2 = ResidualBlock(2*self.dim, 4*self.dim, 3, resample = 'down', hw=int(DIM/2))
         self.rb3 = ResidualBlock(4*self.dim, 8*self.dim, 3, resample = 'down', hw=int(DIM/4))
@@ -209,10 +209,11 @@ class GoodDiscriminator(nn.Module):
         self.ln2 = nn.Linear(4*4*8*self.dim, self.num_class)
 
     def forward(self, input):
+        
         output = input.contiguous()
-        output = output.view(-1, 3, DIM, DIM)
+        output = output.view(-1, 1, DIM, DIM)
         output = self.conv1(output)
-        output = self.rb1(output)
+        output = self.rb1(output)  
         output = self.rb2(output)
         output = self.rb3(output)
         output = self.rb4(output)
@@ -220,4 +221,5 @@ class GoodDiscriminator(nn.Module):
         output_wgan = self.ln1(output)
         output_wgan = output_wgan.view(-1)
         output_congan = self.ln2(output)
+        
         return output_wgan, output_congan
