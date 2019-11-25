@@ -16,7 +16,8 @@ import pdb
 #import gpustat
 
 #from models.conwgan import *
-from models.dcgan import *
+#from models.dcgan import *
+from models.dcganv2 import *
 
 import torch
 import torchvision
@@ -43,12 +44,12 @@ layers = data['layers'][:].sum(axis=1)
 
 training_dataset = tuple(zip(layers, energies))
 
-EXP = 'testGP'
+EXP = 'testGP-ndf64v2'
 
 BATCH_SIZE = 100 # Batch size. Must be a multiple of N_GPUS
 
 dataloader = torch.utils.data.DataLoader(training_dataset, batch_size=BATCH_SIZE,
-                                        shuffle=True, num_workers=6)
+                                        shuffle=True, num_workers=8)
 
 
 
@@ -63,8 +64,8 @@ RESTORE_MODE = False  # if True, it will load saved model from OUT_PATH and cont
 START_ITER = 0 # starting iteration 
 OUTPUT_PATH = '/beegfs/desy/user/eren/improved-wgan-pytorch/output/testGP/' # output path where result (.e.g drawing images, cost, chart) will be stored
 # MODE = 'wgan-gp'
-NDF = 256 # Model dimensionality (critic)
-NGF = 128 # Model dimensionality (generator) 
+NDF = 64 # Model dimensionality (critic)
+NGF = 64 # Model dimensionality (generator) 
 DIM = 30 
 LATENT = 500
 CRITIC_ITERS = 10 # How many iterations to train the critic for
@@ -194,7 +195,7 @@ def train():
             g_cost.backward()
         
         optimizer_g.step()
-        end = timer()
+        #end = timer()
         #print(f'---train G elapsed time: {end - start}')
         #---------------------TRAIN D------------------------
         for p in aD.parameters():  # reset requires_grad
