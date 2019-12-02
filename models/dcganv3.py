@@ -89,36 +89,44 @@ class DCGAN_G(nn.Module):
         self.nc = nc
         self.z = z
         
-        self.cond1 = torch.nn.Linear(self.z+1, 5*5*ngf)
-        
+        self.cond1 = torch.nn.Linear(self.z+1, 100)
+        self.cond2 = torch.nn.Linear(100, 10*10*ngf)
         
         ## deconvolution
-        self.deconv1 = torch.nn.ConvTranspose2d(ngf, ngf*8, kernel_size=3, stride=3, padding=1, bias=False)
+        self.deconv1 = torch.nn.ConvTranspose2d(ngf, ngf*2, kernel_size=3, stride=3, padding=1, bias=False)
         ## batch-normalization
-        self.bn1 = torch.nn.BatchNorm2d(ngf*8)
+        self.bn1 = torch.nn.BatchNorm2d(ngf*2)
         ## deconvolution
-        self.deconv2 = torch.nn.ConvTranspose2d(ngf*8, ngf*4, kernel_size=3, stride=2, padding=1, bias=False)
+        self.deconv2 = torch.nn.ConvTranspose2d(ngf*2, ngf*4, kernel_size=3, stride=2, padding=1, bias=False)
         ## batch-normalization
         self.bn2 = torch.nn.BatchNorm2d(ngf*4)
         # deconvolution
-        self.deconv3 = torch.nn.ConvTranspose2d(ngf*4, ngf*2, kernel_size=3, stride=2, padding=1, bias=False)
+        self.deconv3 = torch.nn.ConvTranspose2d(ngf*4, ngf*8, kernel_size=3, stride=2, padding=1, bias=False)
         ## batch-normalization
-        self.bn3 = torch.nn.BatchNorm2d(ngf*2)
+        self.bn3 = torch.nn.BatchNorm2d(ngf*8)
         
-        # deconvolution
-        self.deconv4 = torch.nn.ConvTranspose2d(ngf*2, ngf, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn3 = torch.nn.BatchNorm2d(ngf)
-        # deconvolution
-        self.deconv5 = torch.nn.ConvTranspose2d(ngf, 30, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn4 = torch.nn.BatchNorm2d(30)
-        # deconvolution
-        self.deconv5 = torch.nn.ConvTranspose2d(30, 10, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn5 = torch.nn.BatchNorm2d(10)
-        # deconvolution
-        self.deconv5 = torch.nn.ConvTranspose2d(10, 1, kernel_size=3, stride=2, padding=1, bias=False)
-
-
-       
+        ## convolution 
+        self.conv0 = torch.nn.Conv2d(ngf*8, 1, kernel_size=3, stride=4, padding=1, bias=False)
+        ## batch-normalisation
+        self.bn0 = torch.nn.BatchNorm2d(1)
+        
+        ## convolution 
+        self.conv1 = torch.nn.Conv2d(nc, ngf*4, kernel_size=3, stride=1, padding=1, bias=False)
+        ## batch-normalisation
+        self.bn01 = torch.nn.BatchNorm2d(ngf*4)
+        
+        ## convolution 
+        self.conv2 = torch.nn.Conv2d(ngf*4, ngf*8, kernel_size=3, stride=1, padding=1, bias=False)
+        ## batch-normalisation
+        self.bn02 = torch.nn.BatchNorm2d(ngf*8)
+        
+        ## convolution 
+        self.conv3 = torch.nn.Conv2d(ngf*8, ngf*4, kernel_size=3, stride=1, padding=1, bias=False)
+        ## batch-normalisation
+        self.bn03 = torch.nn.BatchNorm2d(ngf*4)
+        
+        ## convolution 
+        self.conv4 = torch.nn.Conv2d(ngf*4, nc, kernel_size=3, stride=1, padding=1, bias=False)
     
         
         
@@ -129,17 +137,17 @@ class DCGAN_G(nn.Module):
         for i in range(self.nc):     
             ## conditioning on energy 
             x = F.leaky_relu(self.cond1(torch.cat((energy, noise), 1)), 0.2)
-           
+            x = F.leaky_relu(self.cond2(x), 0.2)
             
             x = x.contiguous()
         
             ## change size for deconv2d network. Image is 10x10
-            x = x.view(-1,self.ngf,5,5)        
+            x = x.view(-1,self.ngf,10,10)        
 
             ## apply series of deconv2d and batch-norm
-            x = F.leaky_relu(self.bn1(self.deconv1(x, output_size=[x.size(0), x.size(1) , 10, 10])), 0.2) 
-            x = F.leaky_relu(self.bn2(self.deconv2(x, output_size=[x.size(0), x.size(1) , 20, 20])), 0.2)
-            x = F.leaky_relu(self.bn3(self.deconv3(x, output_size=[x.size(0), x.size(1) , 30, 30])), 0.2)                         
+            x = F.leaky_relu(self.bn1(self.deconv1(x, output_size=[x.size(0), x.size(1) , 30, 30])), 0.2) 
+            x = F.leaky_relu(self.bn2(self.deconv2(x, output_size=[x.size(0), x.size(1) , 60, 60])), 0.2)
+            x = F.leaky_relu(self.bn3(self.deconv3(x, output_size=[x.size(0), x.size(1) , 120, 120])), 0.2)                         
             
             ##Image is 120x120
             
