@@ -11,13 +11,12 @@ class DCGAN_D(nn.Module):
 
     """
 
-    def __init__(self, isize, nc, ndf, nclass):
+    def __init__(self, isize, nc, ndf):
         super(DCGAN_D, self).__init__()    
         self.ndf = ndf
         self.isize = isize
         self.nc = nc
-        self.nclass = nclass
-
+        
 
         ### convolution
         self.conv1 = torch.nn.Conv2d(nc, ndf*8, kernel_size=4, stride=2, padding=1, bias=False)
@@ -45,7 +44,7 @@ class DCGAN_D(nn.Module):
         self.conv5 = torch.nn.Conv2d(ndf, 1, kernel_size=2, stride=2, padding=1, bias=False)
         # Read-out layer : 4 * 4  input features, ndf output features 
         self.fc = torch.nn.Linear((4 * 4)+1, 1)
-        self.fc2 = torch.nn.Linear((4 * 4)+1, self.nclass)
+       
 
 
         
@@ -72,11 +71,11 @@ class DCGAN_D(nn.Module):
 
         # Read-out layers 
         output_wgan = self.fc(x)
-        output_congan = self.fc2(x)
+       
         
         output_wgan = output_wgan.view(-1) ### flattens
 
-        return output_wgan, output_congan
+        return output_wgan
 
 
 
