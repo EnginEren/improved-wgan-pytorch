@@ -17,49 +17,33 @@ class DCGAN_D(nn.Module):
         self.nc = nc
 
         ## linear layers
-        self.cond1 = torch.nn.Linear(1, 50)
-        self.cond2 = torch.nn.Linear(50, isize*isize)
-        
-        ### convolution
-        self.conv1 = torch.nn.Conv2d(nc+1, ndf, kernel_size=3, stride=2, padding=0, bias=False)
-        ## layer-normalization
-        self.bn1 = torch.nn.LayerNorm([14,14])
-        ## convolution
-        self.conv2 = torch.nn.Conv2d(ndf, 10, kernel_size=3, stride=2, padding=0, bias=False)
-        ## layer-normalization
-        self.bn2 = torch.nn.LayerNorm([6,6])
-        #convolution
-        self.conv3 = torch.nn.Conv2d(10, 5, kernel_size=3, stride=1, padding=0, bias=False)
+        self.cond = torch.nn.Linear(1, isize*isize)
+        self.fc1 = torch.nn.Linear((nc +1) * isize * isize, ndf)
+        self.fc2 = torch.nn.Linear(ndf, ndf)
+        self.fc3 = torch.nn.Linear(ndf, ndf)
+        self.fc4 = torch.nn.Linear(ndf,1)
 
-        # Read-out layer : ndf * isize * isize input features, ndf output features 
-        self.fc = torch.nn.Linear(5 * 4 * 4, 1)
         
     def forward(self, x, energy):
         
         ## conditioning on energy
-        energy = F.leaky_relu(self.cond1(energy), 0.2)
-        energy = self.cond2(energy)
+        energy = F.leaky_relu(self.cond(energy), 0.2)
+        
         
         ## reshape into two 2D
         energy = energy.view(-1, 1, self.isize, self.isize)
-        
+
         ## concentration with input : N+1 (Nlayers + 1 cond) x 30 x 30
         x = torch.cat((x, energy), 1)
-        
-        x = F.leaky_relu(self.bn1(self.conv1(x)), 0.2)
-        x = F.leaky_relu(self.bn2(self.conv2(x)), 0.2)
-        x = F.leaky_relu(self.conv3(x), 0.2)
-        
-        #Grand total --> size changes from (nc+1, 30, 30) to (5, 4, 4)
 
-        
-        x = x.view(-1, 5 * 4 * 4)
-        # Size changes from (5, 4, 4) to (1, 5 * 4 * 4) 
-        #Recall that the -1 infers this dimension from the other given dimension
+        ## reshape into vector
+        x = x.view(-1, x.size(1) * x.size(2) * x.size(3))
 
+        x = F.leaky_relu(self.fc1(x), 0.2)
+        x = F.leaky_relu(self.fc2(x), 0.2)
+        x = F.leaky_relu(self.fc3(x), 0.2)
 
-        # Read-out layer 
-        output_wgan = self.fc(x)
+        output_wgan = self.fc4(x)
         
         output_wgan = output_wgan.view(-1) ### flattens
 

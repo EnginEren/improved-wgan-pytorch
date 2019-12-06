@@ -40,7 +40,7 @@ import models.HDF5Dataset as H
 
 
 
-EXP = 'WGAN-GP_v17-Bs200'
+EXP = 'WGAN-GP_v1-10-50GeV'
 
 BATCH_SIZE = 200 # Batch size. Must be a multiple of N_GPUS
 
@@ -213,9 +213,10 @@ def train():
             aE.zero_grad()
 
             # gen fake data and load real data
-            inc_energy_label = [10.0, 50.0]
+            inc_energy_label = [50.0, 50.0]
             f_label = np.random.choice(inc_energy_label, (BATCH_SIZE,1), p=[0.5, 0.5])
 
+         
             noise = np.random.normal(0, 1, (BATCH_SIZE, LATENT))     
             noise = torch.from_numpy(noise).float()
             noise = noise.to(device)
@@ -224,25 +225,34 @@ def train():
             y_label = y_label.to(device)
 
             
+            batch = next(dataiter, None)
+
+            if batch is None:
+                dataiter = iter(dataloader)
+                batch = dataiter.next()
+
+            real_label = batch[1] ## energy label
+            real_label = real_label.unsqueeze(-1)  ## transform to [Bs, 1 ]
+            real_label = real_label.to(device)
+            real_label.requires_grad_(True)
+
+            y_label = real_label
+
             with torch.no_grad():
                 noisev = noise  # totally freeze G, training D
             fake_data = aG(noisev, y_label).detach()
                 
             
-            batch = next(dataiter, None)
             
-            if batch is None:
-                dataiter = iter(dataloader)
-                batch = dataiter.next()
 
             real_data = batch[0] # 30x30 calo layers
             real_data = real_data.unsqueeze(1)  ## transform to [Bs, 1, 30 , 30 ]
             real_data = real_data.to(device)
             real_data.requires_grad_(True)
 
-            real_label = batch[1] ## energy label
-            real_label = real_label.unsqueeze(-1)  ## transform to [Bs, 1 ]
-            real_label = real_label.to(device)
+            #real_label = batch[1] ## energy label
+            #real_label = real_label.unsqueeze(-1)  ## transform to [Bs, 1 ]
+            #real_label = real_label.to(device)
             
 
             #### supervised-training for energy regressor!
@@ -267,10 +277,8 @@ def train():
 
           
             # train with interpolated data
-            real_labelGP = batch[1] ## energy label
-            real_labelGP = real_labelGP.unsqueeze(-1)  ## transform to [Bs, 1 ]
-            real_labelGP = real_labelGP.to(device)
-            gradient_penalty = calc_gradient_penalty(aD, real_data, real_labelGP, fake_data)
+            
+            gradient_penalty = calc_gradient_penalty(aD, real_data, real_label, fake_data)
             
 
             # final disc cost
@@ -298,15 +306,15 @@ def train():
         for i in range(GENER_ITERS):
             
             aG.zero_grad()
+            
             inc_energy_label = [10.0, 50.0]
             f_label = np.random.choice(inc_energy_label, (BATCH_SIZE,1), p=[0.5, 0.5])
-            #noise = gen_rand_noise_with_label(f_label)
+
             noise = np.random.normal(0, 1, (BATCH_SIZE, LATENT))     
             noise = torch.from_numpy(noise).float()
             noise = noise.to(device)
 
             y_label = torch.from_numpy(f_label).float()
-            #y_label.requires_grad_(True)
             y_label = y_label.to(device)
             
             noise.requires_grad_(True)
